@@ -93,9 +93,8 @@ pipelines:
           name: Containerize app
           script:
             - apk add curl
-            - curl -L -o file.zip https://$BB_AUTH_STRING@api.bitbucket.org/2.0/repositories/zepben/cimcap/downloads/cimcap-${BITBUCKET_TAG}.zip
-            - mkdir tmp && unzip file.zip -d tmp
-            - mkdir built-artifacts && mv tmp/cimcap*.jar built-artifacts/cimcap.jar
+            - curl -L -o cimcap.jar https://$BB_AUTH_STRING@api.bitbucket.org/2.0/repositories/zepben/cimcap/downloads/cimcap-${BITBUCKET_TAG}.jar
+            - mkdir built-artifacts && mv cimcap.jar built-artifacts/cimcap.jar
             - apk add jq
             - jq --arg VERSION $BITBUCKET_TAG '."post-processors"[0][0].tag = $VERSION' container.json > container.json.tmp
             - mv container.json.tmp container.json
