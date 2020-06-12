@@ -40,7 +40,7 @@ import java.sql.PreparedStatement
 import java.sql.Statement
 import kotlin.system.exitProcess
 
-const val write_network_scope = "write:network"
+const val write_network_scope = "write:ewb"
 val requiredScopes = mapOf(
     "zepben.protobuf.np.NetworkProducer" to write_network_scope,
     "zepben.protobuf.dp.DiagramProducer" to write_network_scope,
