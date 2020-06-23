@@ -17,6 +17,7 @@
 
 package com.zepben.cimcap
 
+import com.zepben.cimbend.common.extensions.typeNameAndMRID
 import com.zepben.cimbend.diagram.DiagramProtoToCim
 import com.zepben.cimbend.diagram.DiagramService
 import com.zepben.protobuf.dp.*
@@ -59,7 +60,7 @@ class DiagramProducerServer(onComplete: List<(Sequence<String>) -> Unit>? = null
     }
 
     override suspend fun completeDiagramService(request: CompleteDiagramServiceRequest): CompleteDiagramServiceRequest {
-        val errors = diagramService.validateReferences()
+        val errors = diagramService.unresolvedReferences().map { "${it.from.typeNameAndMRID()} was missing a reference to  ${it.resolver.toClass.simpleName} ${it.toMrid}"}
         lock.withLock {
             try {
                 callbacks.forEach { it(errors) }

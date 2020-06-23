@@ -17,6 +17,7 @@
 
 package com.zepben.cimcap
 
+import com.zepben.cimbend.common.extensions.typeNameAndMRID
 import com.zepben.cimbend.network.NetworkService
 import com.zepben.cimbend.network.model.NetworkProtoToCim
 import com.zepben.protobuf.np.*
@@ -57,7 +58,8 @@ class NetworkProducerServer(onComplete: List<(Sequence<String>) -> Unit>? = null
     }
 
     override suspend fun completeNetwork(request: CompleteNetworkRequest): CompleteNetworkResponse {
-        val errors = networkService.validateReferences()
+        val errors = networkService.unresolvedReferences()
+            .map { "${it.from.typeNameAndMRID()} was missing a reference to  ${it.resolver.toClass.simpleName} ${it.toMrid}" }
         lock.withLock {
             try {
                 callbacks.forEach { it(errors) }

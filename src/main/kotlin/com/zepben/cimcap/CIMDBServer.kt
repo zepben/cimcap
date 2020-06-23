@@ -213,24 +213,26 @@ fun main(args: Array<String>) {
                 server.start()
                 logger.info("CIMDBServer running on 0.0.0.0:${port}")
 
-                val confServer = ConfigServer(vertx, confPort, audience, tokenLookup, algorithm)
-                logger.info("Starting AuthConfig server")
-                try {
-                    confServer.start()
+                if (tokenAuth) {
+                    val confServer = ConfigServer(vertx, confPort, audience, tokenLookup, algorithm)
+                    logger.info("Starting AuthConfig server")
+                    try {
+                        confServer.start()
 
-                    Runtime.getRuntime().addShutdownHook(Thread {
-                        runBlocking {
-                            confServer.close()
-                            vertx.close()
-                        }
-                    })
-                } catch (e: Exception) {
-                    logger.error("Failed to start AuthConfig server: ${e.message}")
-                    logger.debug("", e)
-                    return@runBlocking -2
+                        Runtime.getRuntime().addShutdownHook(Thread {
+                            runBlocking {
+                                confServer.close()
+                                vertx.close()
+                            }
+                        })
+                    } catch (e: Exception) {
+                        logger.error("Failed to start AuthConfig server: ${e.message}")
+                        logger.debug("", e)
+                        return@runBlocking -2
+                    }
+                    logger.info("AuthConfig HTTP server running on 0.0.0.0:${confPort}")
+
                 }
-                logger.info("AuthConfig HTTP server running on 0.0.0.0:${confPort}")
-
                 server.blockUntilShutdown()
             }
             0

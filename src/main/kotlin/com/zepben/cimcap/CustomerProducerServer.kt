@@ -17,6 +17,8 @@
 
 package com.zepben.cimcap
 
+import com.zepben.cimbend.common.extensions.nameAndMRID
+import com.zepben.cimbend.common.extensions.typeNameAndMRID
 import com.zepben.cimbend.customer.CustomerService
 import com.zepben.cimbend.customer.translator.CustomerProtoToCim
 import com.zepben.protobuf.cp.*
@@ -56,7 +58,7 @@ class CustomerProducerServer(onComplete: List<(Sequence<String>) -> Unit>? = nul
     }
 
     override suspend fun completeCustomerService(request: CompleteCustomerServiceRequest): CompleteCustomerServiceRequest {
-        val errors = customerService.validateReferences()
+        val errors = customerService.unresolvedReferences().map { "${it.from.typeNameAndMRID()} was missing a reference to  ${it.resolver.toClass.simpleName} ${it.toMrid}"}
         lock.withLock {
             try {
                 callbacks.forEach { it(errors) }
