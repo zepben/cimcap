@@ -108,13 +108,7 @@ class CIMDBServer(
             val writer = DatabaseWriter(databaseFile, getConnection, getStatement, getPreparedStatement)
             if (writer.save(listOf(networkServicer.networkService, diagramServicer.diagramService, customerServicer.customerService))) {
                 logger.info("Database saved to $databaseFile")
-                networkServicer.resetNetworkService()
-                diagramServicer.resetDiagramService()
-                customerServicer.resetCustomerService()
-                networkSent = false
-                diagramSent = false
-                customerSent = false
-                return
+                stop()
             } else {
                 logger.error("Save could not be completed")
                 throw Exception("Database failed to save")

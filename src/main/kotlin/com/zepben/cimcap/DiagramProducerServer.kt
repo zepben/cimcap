@@ -24,11 +24,6 @@ import com.zepben.protobuf.dp.*
 import io.grpc.Status
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.util.concurrent.Semaphore
-import java.util.concurrent.atomic.AtomicInteger
-import java.util.concurrent.locks.Lock
-import java.util.concurrent.locks.ReentrantLock
-import kotlin.concurrent.withLock
 
 class DiagramProducerServer(onComplete: List<(Sequence<String>) -> Unit>? = null) : DiagramProducerGrpcKt.DiagramProducerCoroutineImplBase(), CallsBack{
 
@@ -37,15 +32,9 @@ class DiagramProducerServer(onComplete: List<(Sequence<String>) -> Unit>? = null
         private set
     private var diagramToCim = DiagramProtoToCim(diagramService)
     private val logger: Logger = LoggerFactory.getLogger(javaClass)
-    private val lock = ReentrantLock()
 
     init {
         onComplete?.forEach { callbacks.add(it) }
-    }
-
-    fun resetDiagramService() {
-        diagramService = DiagramService()
-        diagramToCim = DiagramProtoToCim(diagramService)
     }
 
     override fun addCallback(callback: (Sequence<String>) -> Unit) {
@@ -53,20 +42,16 @@ class DiagramProducerServer(onComplete: List<(Sequence<String>) -> Unit>? = null
     }
 
     override suspend fun createDiagramService(request: CreateDiagramServiceRequest): CreateDiagramServiceRequest {
-        lock.withLock {
-            resetDiagramService()
-        }
         return CreateDiagramServiceRequest.getDefaultInstance()
     }
 
     override suspend fun completeDiagramService(request: CompleteDiagramServiceRequest): CompleteDiagramServiceRequest {
-        val errors = diagramService.unresolvedReferences().map { "${it.from.typeNameAndMRID()} was missing a reference to  ${it.resolver.toClass.simpleName} ${it.toMrid}"}
-        lock.withLock {
-            try {
-                callbacks.forEach { it(errors) }
-            } catch (e: Exception) {
-                throw Status.fromCode(Status.Code.INTERNAL).withDescription(e.toString()).asException()
-            }
+        val errors = diagramService.unresolvedReferences()
+            .map { "${it.from.typeNameAndMRID()} was missing a reference to  ${it.resolver.toClass.simpleName} ${it.toMrid}" }
+        try {
+            callbacks.forEach { it(errors) }
+        } catch (e: Exception) {
+            throw Status.fromCode(Status.Code.INTERNAL).withDescription(e.toString()).asException()
         }
         val errorMsg = StringBuilder()
         errors.forEach {

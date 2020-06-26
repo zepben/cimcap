@@ -24,8 +24,6 @@ import com.zepben.protobuf.np.*
 import io.grpc.Status
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.util.concurrent.locks.ReentrantLock
-import kotlin.concurrent.withLock
 
 class NetworkProducerServer(onComplete: List<(Sequence<String>) -> Unit>? = null) :
     NetworkProducerGrpcKt.NetworkProducerCoroutineImplBase(), CallsBack {
@@ -35,15 +33,9 @@ class NetworkProducerServer(onComplete: List<(Sequence<String>) -> Unit>? = null
         private set
     private var networkToCim = NetworkProtoToCim(networkService)
     private val logger: Logger = LoggerFactory.getLogger(javaClass)
-    private val lock = ReentrantLock()
 
     init {
         onComplete?.forEach { callbacks.add(it) }
-    }
-
-    fun resetNetworkService() {
-        networkService = NetworkService()
-        networkToCim = NetworkProtoToCim(networkService)
     }
 
     override fun addCallback(callback: (Sequence<String>) -> Unit) {
@@ -51,21 +43,16 @@ class NetworkProducerServer(onComplete: List<(Sequence<String>) -> Unit>? = null
     }
 
     override suspend fun createNetwork(request: CreateNetworkRequest): CreateNetworkResponse {
-        lock.withLock {
-            resetNetworkService()
-        }
         return CreateNetworkResponse.getDefaultInstance()
     }
 
     override suspend fun completeNetwork(request: CompleteNetworkRequest): CompleteNetworkResponse {
         val errors = networkService.unresolvedReferences()
             .map { "${it.from.typeNameAndMRID()} was missing a reference to  ${it.resolver.toClass.simpleName} ${it.toMrid}" }
-        lock.withLock {
-            try {
-                callbacks.forEach { it(errors) }
-            } catch (e: Exception) {
-                throw Status.fromCode(Status.Code.INTERNAL).withDescription(e.toString()).asException()
-            }
+        try {
+            callbacks.forEach { it(errors) }
+        } catch (e: Exception) {
+            throw Status.fromCode(Status.Code.INTERNAL).withDescription(e.toString()).asException()
         }
         val errorMsg = StringBuilder()
         errors.forEach {

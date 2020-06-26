@@ -17,7 +17,6 @@
 
 package com.zepben.cimcap
 
-import com.zepben.cimbend.common.extensions.nameAndMRID
 import com.zepben.cimbend.common.extensions.typeNameAndMRID
 import com.zepben.cimbend.customer.CustomerService
 import com.zepben.cimbend.customer.translator.CustomerProtoToCim
@@ -25,8 +24,6 @@ import com.zepben.protobuf.cp.*
 import io.grpc.Status
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.util.concurrent.locks.ReentrantLock
-import kotlin.concurrent.withLock
 
 class CustomerProducerServer(onComplete: List<(Sequence<String>) -> Unit>? = null) : CustomerProducerGrpcKt.CustomerProducerCoroutineImplBase(), CallsBack {
 
@@ -35,15 +32,9 @@ class CustomerProducerServer(onComplete: List<(Sequence<String>) -> Unit>? = nul
         private set
     private var customerToCim = CustomerProtoToCim(customerService)
     private val logger: Logger = LoggerFactory.getLogger(javaClass)
-    private val lock = ReentrantLock()
 
     init {
         onComplete?.forEach { callbacks.add(it) }
-    }
-
-    fun resetCustomerService() {
-        customerService = CustomerService()
-        customerToCim = CustomerProtoToCim(customerService)
     }
 
     override fun addCallback(callback: (Sequence<String>) -> Unit) {
@@ -51,20 +42,16 @@ class CustomerProducerServer(onComplete: List<(Sequence<String>) -> Unit>? = nul
     }
 
     override suspend fun createCustomerService(request: CreateCustomerServiceRequest): CreateCustomerServiceRequest {
-        lock.withLock {
-            resetCustomerService()
-        }
         return CreateCustomerServiceRequest.getDefaultInstance()
     }
 
     override suspend fun completeCustomerService(request: CompleteCustomerServiceRequest): CompleteCustomerServiceRequest {
-        val errors = customerService.unresolvedReferences().map { "${it.from.typeNameAndMRID()} was missing a reference to  ${it.resolver.toClass.simpleName} ${it.toMrid}"}
-        lock.withLock {
-            try {
-                callbacks.forEach { it(errors) }
-            } catch (e: Exception) {
-                throw Status.fromCode(Status.Code.INTERNAL).withDescription(e.toString()).asException()
-            }
+        val errors = customerService.unresolvedReferences()
+            .map { "${it.from.typeNameAndMRID()} was missing a reference to  ${it.resolver.toClass.simpleName} ${it.toMrid}" }
+        try {
+            callbacks.forEach { it(errors) }
+        } catch (e: Exception) {
+            throw Status.fromCode(Status.Code.INTERNAL).withDescription(e.toString()).asException()
         }
         val errorMsg = StringBuilder()
         errors.forEach {
