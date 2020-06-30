@@ -24,6 +24,8 @@ import com.zepben.auth.JWTAuthenticator
 import com.zepben.auth.grpc.AuthInterceptor
 import com.zepben.cimbend.database.sqlite.DatabaseWriter
 import com.zepben.cimcap.auth.ConfigServer
+import com.zepben.zepconn.grpc.GrpcServer
+import com.zepben.zepconn.grpc.SslContextConfig
 import io.grpc.netty.shaded.io.grpc.netty.GrpcSslContexts
 import io.grpc.netty.shaded.io.grpc.netty.NettyServerBuilder
 import io.grpc.netty.shaded.io.netty.handler.ssl.ClientAuth
@@ -41,21 +43,13 @@ import java.sql.Statement
 import kotlin.system.exitProcess
 
 const val write_network_scope = "write:ewb"
-val requiredScopes = mapOf(
-    "zepben.protobuf.np.NetworkProducer" to write_network_scope,
-    "zepben.protobuf.dp.DiagramProducer" to write_network_scope,
-    "zepben.protobuf.cp.CustomerProducer" to write_network_scope
-)
 
 /**
  * @property domain The domain on which to fetch tokens from. Must expose its JWKS on <domain>/.well_known/jwks.json
  */
 class CIMDBServer(
-    val port: Int = 50051,
-    certChainFilePath: String? = null,
-    privateKeyFilePath: String? = null,
-    trustCertCollectionFilePath: String? = null,
-    clientAuth: ClientAuth = ClientAuth.OPTIONAL,
+    port: Int = 50051,
+    sslContextConfig: SslContextConfig? = null,
     audience: String? = null,
     domain: String? = null,
     private val databaseFile: String = "cim.db",
@@ -65,37 +59,23 @@ class CIMDBServer(
     private var networkServicer: NetworkProducerServer = NetworkProducerServer(),
     private var diagramServicer: DiagramProducerServer = DiagramProducerServer(),
     private var customerServicer: CustomerProducerServer = CustomerProducerServer()
-) {
+) : GrpcServer(port, sslContextConfig, createAuthInterceptor(audience, domain)) {
 
     private val logger: Logger = LoggerFactory.getLogger(javaClass)
     private var networkSent = false
     private var diagramSent = false
     private var customerSent = false
-    private val serverBuilder = NettyServerBuilder.forPort(port)
-        .addService(networkServicer)
-        .addService(diagramServicer)
-        .addService(customerServicer)
 
     init {
-        createSslContext(certChainFilePath, privateKeyFilePath, trustCertCollectionFilePath, clientAuth)?.let {
-            serverBuilder.sslContext(it)
-        }
-        audience?.let { aud ->
-            domain?.let { dom ->
-                serverBuilder.intercept(
-                    AuthInterceptor(
-                        JWTAuthenticator(aud, dom),
-                        requiredScopes
-                    )
-                )
-            }
-        }
+        serverBuilder
+            .addService(networkServicer)
+            .addService(diagramServicer)
+            .addService(customerServicer)
+
         networkServicer.addCallback { networkSent = true; handleComplete(it) }
         diagramServicer.addCallback { diagramSent = true; handleComplete(it) }
         customerServicer.addCallback { customerSent = true; handleComplete(it) }
     }
-
-    private val server = serverBuilder.build()
 
     private val isComplete
         get() = networkSent && diagramSent && customerSent
@@ -116,50 +96,25 @@ class CIMDBServer(
         }
     }
 
-    fun start() {
-        server.start()
+    override fun start() {
+        super.start()
         println("Server started, listening on $port")
-        Runtime.getRuntime().addShutdownHook(
-            Thread {
-                this@CIMDBServer.stop()
-                logger.info("Stopped CimDbServer")
-            }
+    }
+}
+
+private fun createAuthInterceptor(audience: String?, domain: String?) =
+    if (audience != null && domain != null) {
+        val jwtAuthenticator = JWTAuthenticator(audience, domain)
+        val requiredScopes = mapOf(
+            "zepben.protobuf.np.NetworkProducer" to write_network_scope,
+            "zepben.protobuf.dp.DiagramProducer" to write_network_scope,
+            "zepben.protobuf.cp.CustomerProducer" to write_network_scope
         )
-    }
 
-    fun stop() {
-        server.shutdown()
+        AuthInterceptor(jwtAuthenticator, requiredScopes)
+    } else {
+        null
     }
-
-    fun blockUntilShutdown() {
-        server.awaitTermination()
-    }
-}
-
-/**
- * Create an SSLContext for use with the gRPC server.
- * @return null if a private key or cert chain are not provided, otherwise an SSLContext with the provided
- * credentials.
- */
-fun createSslContext(
-    certChainFilePath: String? = null,
-    privateKeyFilePath: String? = null,
-    trustCertCollectionFilePath: String? = null,
-    clientAuth: ClientAuth = ClientAuth.OPTIONAL
-): SslContext? {
-    if (privateKeyFilePath.isNullOrBlank() || certChainFilePath.isNullOrBlank())
-        return null
-
-    val sslClientContextBuilder = SslContextBuilder.forServer(
-        File(certChainFilePath),
-        File(privateKeyFilePath)
-    )
-    if (!trustCertCollectionFilePath.isNullOrBlank()) {
-        sslClientContextBuilder.trustManager(File(trustCertCollectionFilePath))
-        sslClientContextBuilder.clientAuth(clientAuth)
-    }
-    return GrpcSslContexts.configure(sslClientContextBuilder).build()
-}
 
 class Args(parser: ArgParser) {
     val port by parser.storing("-p", "--port", help = "Port for gRPC server") { toInt() }.default(50051)
@@ -190,10 +145,12 @@ fun main(args: Array<String>) {
                 val server = try {
                     CIMDBServer(
                         port,
-                        certChainFilePath,
-                        privateKeyFilePath,
-                        trustCertCollectionFilePath,
-                        if (clientAuth) ClientAuth.REQUIRE else ClientAuth.OPTIONAL,
+                        SslContextConfig(
+                            certChainFilePath,
+                            privateKeyFilePath,
+                            trustCertCollectionFilePath,
+                            if (clientAuth) ClientAuth.REQUIRE else ClientAuth.OPTIONAL
+                        ),
                         if (tokenAuth) audience else null,
                         if (tokenAuth) domain else null,
                         dbFile

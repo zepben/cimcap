@@ -51,6 +51,7 @@ dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
     implementation "com.zepben:vertx-route-utils:5.0.0"
     implementation "com.zepben:auth:1.0-SNAPSHOT"
+    implementation "com.zepben:zepconn:1.0.0-SNAPSHOT"
     implementation "com.zepben:cimbend:$project.ext.cimbend_version"
     implementation "com.zepben.protobuf:ewb-grpc-np:$project.ext.ewb_grpc_version"
     implementation "com.zepben.protobuf:ewb-grpc-cp:$project.ext.ewb_grpc_version"
