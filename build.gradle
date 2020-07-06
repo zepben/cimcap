@@ -33,7 +33,7 @@ configurations.all {
 
 ext {
     cimbend_version = "1.2.0-SNAPSHOT" //1.1-SNAPSHOT"
-    ewb_grpc_version = "1.0-SNAPSHOT"
+    ewb_grpc_version = "1.0.0-SNAPSHOT"
     protobuf_version = "3.11.1"
     grpc_version = "1.28.1" // CURRENT_GRPC_VERSION
     grpc_kotlin_version = "0.1.1" // CURRENT_GRPC_KOTLIN_VERSION

@@ -48,7 +48,9 @@ class NetworkProducerServer(onComplete: List<(Sequence<String>) -> Unit>? = null
 
     override suspend fun completeNetwork(request: CompleteNetworkRequest): CompleteNetworkResponse {
         val errors = networkService.unresolvedReferences()
+            .filter { it.toMrid.isNotEmpty() }
             .map { "${it.from.typeNameAndMRID()} was missing a reference to  ${it.resolver.toClass.simpleName} ${it.toMrid}" }
+
         try {
             callbacks.forEach { it(errors) }
         } catch (e: Exception) {
@@ -94,6 +96,26 @@ class NetworkProducerServer(onComplete: List<(Sequence<String>) -> Unit>? = null
             throw Status.fromCode(Status.Code.UNKNOWN).withDescription(e.message).asException()
         }
         return CreateAssetOwnerResponse.getDefaultInstance()
+    }
+
+    override suspend fun createPole(request: CreatePoleRequest): CreatePoleResponse {
+        try {
+            networkToCim.addFromPb(request.pole)
+        } catch (e: Exception) {
+            logger.debug(e.message, e)
+            throw Status.fromCode(Status.Code.UNKNOWN).withDescription(e.message).asException()
+        }
+        return CreatePoleResponse.getDefaultInstance()
+    }
+
+    override suspend fun createStreetlight(request: CreateStreetlightRequest): CreateStreetlightResponse {
+        try {
+            networkToCim.addFromPb(request.streetlight)
+        } catch (e: Exception) {
+            logger.debug(e.message, e)
+            throw Status.fromCode(Status.Code.UNKNOWN).withDescription(e.message).asException()
+        }
+        return CreateStreetlightResponse.getDefaultInstance()
     }
 
     /** IEC-61968 Common **/
@@ -231,6 +253,7 @@ class NetworkProducerServer(onComplete: List<(Sequence<String>) -> Unit>? = null
         return CreateSubstationResponse.getDefaultInstance()
     }
 
+    // TODO: This may not be necessary any more as terminals are always sent with their ConductingEquipment
     override suspend fun createTerminal(request: CreateTerminalRequest): CreateTerminalResponse {
         try {
             networkToCim.addFromPb(request.terminal)
@@ -244,6 +267,7 @@ class NetworkProducerServer(onComplete: List<(Sequence<String>) -> Unit>? = null
     /** IEC-61970 base/wires **/
     override suspend fun createAcLineSegment(request: CreateAcLineSegmentRequest): CreateAcLineSegmentResponse {
         try {
+            request.terminalsList.forEach(networkToCim::addFromPb)
             networkToCim.addFromPb(request.acLineSegment)
         } catch (e: Exception) {
             logger.debug(e.message, e)
@@ -254,6 +278,7 @@ class NetworkProducerServer(onComplete: List<(Sequence<String>) -> Unit>? = null
 
     override suspend fun createBreaker(request: CreateBreakerRequest): CreateBreakerResponse {
         try {
+            request.terminalsList.forEach(networkToCim::addFromPb)
             networkToCim.addFromPb(request.breaker)
         } catch (e: Exception) {
             logger.debug(e.message, e)
@@ -264,6 +289,7 @@ class NetworkProducerServer(onComplete: List<(Sequence<String>) -> Unit>? = null
 
     override suspend fun createDisconnector(request: CreateDisconnectorRequest): CreateDisconnectorResponse {
         try {
+            request.terminalsList.forEach(networkToCim::addFromPb)
             networkToCim.addFromPb(request.disconnector)
         } catch (e: Exception) {
             logger.debug(e.message, e)
@@ -274,6 +300,7 @@ class NetworkProducerServer(onComplete: List<(Sequence<String>) -> Unit>? = null
 
     override suspend fun createEnergyConsumer(request: CreateEnergyConsumerRequest): CreateEnergyConsumerResponse {
         try {
+            request.terminalsList.forEach(networkToCim::addFromPb)
             networkToCim.addFromPb(request.energyConsumer)
         } catch (e: Exception) {
             logger.debug(e.message, e)
@@ -294,6 +321,7 @@ class NetworkProducerServer(onComplete: List<(Sequence<String>) -> Unit>? = null
 
     override suspend fun createEnergySource(request: CreateEnergySourceRequest): CreateEnergySourceResponse {
         try {
+            request.terminalsList.forEach(networkToCim::addFromPb)
             networkToCim.addFromPb(request.energySource)
         } catch (e: Exception) {
             logger.debug(e.message, e)
@@ -314,6 +342,7 @@ class NetworkProducerServer(onComplete: List<(Sequence<String>) -> Unit>? = null
 
     override suspend fun createFuse(request: CreateFuseRequest): CreateFuseResponse {
         try {
+            request.terminalsList.forEach(networkToCim::addFromPb)
             networkToCim.addFromPb(request.fuse)
         } catch (e: Exception) {
             logger.debug(e.message, e)
@@ -324,6 +353,7 @@ class NetworkProducerServer(onComplete: List<(Sequence<String>) -> Unit>? = null
 
     override suspend fun createJumper(request: CreateJumperRequest): CreateJumperResponse {
         try {
+            request.terminalsList.forEach(networkToCim::addFromPb)
             networkToCim.addFromPb(request.jumper)
         } catch (e: Exception) {
             logger.debug(e.message, e)
@@ -334,6 +364,7 @@ class NetworkProducerServer(onComplete: List<(Sequence<String>) -> Unit>? = null
 
     override suspend fun createJunction(request: CreateJunctionRequest): CreateJunctionResponse {
         try {
+            request.terminalsList.forEach(networkToCim::addFromPb)
             networkToCim.addFromPb(request.junction)
         } catch (e: Exception) {
             logger.debug(e.message, e)
@@ -344,6 +375,7 @@ class NetworkProducerServer(onComplete: List<(Sequence<String>) -> Unit>? = null
 
     override suspend fun createLinearShuntCompensator(request: CreateLinearShuntCompensatorRequest): CreateLinearShuntCompensatorResponse {
         try {
+            request.terminalsList.forEach(networkToCim::addFromPb)
             networkToCim.addFromPb(request.linearShuntCompensator)
         } catch (e: Exception) {
             logger.debug(e.message, e)
@@ -364,6 +396,8 @@ class NetworkProducerServer(onComplete: List<(Sequence<String>) -> Unit>? = null
 
     override suspend fun createPowerTransformer(request: CreatePowerTransformerRequest): CreatePowerTransformerResponse {
         try {
+            request.terminalsList.forEach(networkToCim::addFromPb)
+            request.endsList.forEach(networkToCim::addFromPb)
             networkToCim.addFromPb(request.powerTransformer)
         } catch (e: Exception) {
             logger.debug(e.message, e)
@@ -394,6 +428,7 @@ class NetworkProducerServer(onComplete: List<(Sequence<String>) -> Unit>? = null
 
     override suspend fun createRecloser(request: CreateRecloserRequest): CreateRecloserResponse {
         try {
+            request.terminalsList.forEach(networkToCim::addFromPb)
             networkToCim.addFromPb(request.recloser)
         } catch (e: Exception) {
             logger.debug(e.message, e)
