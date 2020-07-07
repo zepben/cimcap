@@ -43,6 +43,7 @@ definitions:
           - *set-nexus-repo-properties
           - ./gradlew -i -b build.gradle build jar
           - export artifact=$(ls build/libs | grep -o "^.*[0-9]\+\.[0-9]\+\.[0-9]\+\(\-SNAPSHOT\)\?\.jar")
+          - apt update && apt install -y curl
           - curl -v -X POST --user "${BB_AUTH_STRING}" "https://api.bitbucket.org/2.0/repositories/${BITBUCKET_REPO_FULL_NAME}/downloads" --form files=@"build/libs/$artifact"
           - pipe: atlassian/slack-notify:0.3.6
             variables:
