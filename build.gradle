@@ -32,8 +32,8 @@ configurations.all {
 }
 
 ext {
-    cimbend_version = "1.2.0-SNAPSHOT" //1.1-SNAPSHOT"
-    ewb_grpc_version = "1.0.0-SNAPSHOT"
+    evolve_sdk_version = "0.2.0-SNAPSHOT" //1.1-SNAPSHOT"
+    evolve_grpc_version = "0.2.0"
     protobuf_version = "3.11.1"
     grpc_version = "1.28.1" // CURRENT_GRPC_VERSION
     grpc_kotlin_version = "0.1.1" // CURRENT_GRPC_KOTLIN_VERSION
@@ -50,12 +50,9 @@ dependencies {
     implementation "io.vertx:vertx-web:$project.ext.vertx_version"
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
     implementation "com.zepben:vertx-route-utils:5.0.0"
-    implementation "com.zepben:auth:1.0-SNAPSHOT"
-    implementation "com.zepben:zepconn:1.0.0-SNAPSHOT"
-    implementation "com.zepben:cimbend:$project.ext.cimbend_version"
-    implementation "com.zepben.protobuf:ewb-grpc-np:$project.ext.ewb_grpc_version"
-    implementation "com.zepben.protobuf:ewb-grpc-cp:$project.ext.ewb_grpc_version"
-    implementation "com.zepben.protobuf:ewb-grpc-dp:$project.ext.ewb_grpc_version"
+    implementation "com.zepben.evolve:evolve-conn:0.1.0-SNAPSHOT"
+    implementation "com.zepben:evolve-sdk:$project.ext.evolve_sdk_version"
+    implementation "com.zepben.protobuf:evolve-grpc:$project.ext.evolve_grpc_version"
     implementation "com.google.protobuf:protobuf-java:$project.ext.protobuf_version"
     implementation "io.grpc:grpc-netty-shaded:$project.ext.grpc_version"
     implementation "io.grpc:grpc-kotlin-stub:$project.ext.grpc_kotlin_version"
