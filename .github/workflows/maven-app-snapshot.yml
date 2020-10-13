@@ -1,4 +1,4 @@
-name: Snapshot App release
+name: Maven App Snapshot
 
 on: workflow_dispatch
 
@@ -6,10 +6,6 @@ jobs:
   build-app:
     runs-on: ubuntu-latest
     container: zepben/pipeline-java
-    env:
-      NEXUS_MAVEN_REPO: ${{ secrets.NEXUS_MAVEN_REPO }}
-      NEXUS_USERNAME: ${{ secrets.NEXUS_USERNAME }}
-      NEXUS_PASSWORD: ${{ secrets.NEXUS_PASSWORD }}
     outputs:
       check_container_config: ${{ steps.check_container_config.outputs.files_exists }}
     steps:
@@ -28,7 +24,7 @@ jobs:
           version=$(xmlstarlet pyx pom.xml | grep -v ^A | xmlstarlet p2x | xmlstarlet sel -t -v "/project/version")
           artifact="${artifactId}-${version}.jar"
           echo "::set-output name=artifact-path::$(echo target/$artifact)"
-          mvn clean package -f pom.xml -Dserver.username=$NEXUS_USERNAME -Dserver.password=$NEXUS_PASSWORD -Dserver.repo.url=$NEXUS_MAVEN_REPO
+          mvn clean package -f pom.xml
 
       - uses: actions/upload-artifact@master
         with:
