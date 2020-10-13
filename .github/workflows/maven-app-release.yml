@@ -28,10 +28,6 @@ jobs:
     needs: release-checks
     runs-on: ubuntu-latest
     container: zepben/pipeline-java
-    env:
-      NEXUS_MAVEN_REPO: ${{ secrets.NEXUS_MAVEN_REPO }}
-      NEXUS_USERNAME: ${{ secrets.NEXUS_USERNAME }}
-      NEXUS_PASSWORD: ${{ secrets.NEXUS_PASSWORD }}
     outputs:
       check_container_config: ${{ steps.check_container_config.outputs.files_exists }}
     steps:
@@ -53,7 +49,7 @@ jobs:
       - name: Maven package
         id: build
         run: |
-          mvn clean package -f pom.xml -Dserver.username=$NEXUS_USERNAME -Dserver.password=$NEXUS_PASSWORD -Dserver.repo.url=$NEXUS_MAVEN_REPO
+          mvn clean package -f pom.xml
         continue-on-error: true
 
       - name: Merge and Tag
@@ -132,7 +128,7 @@ jobs:
           name: build-artifact
           path: built-artifacts
 
-      - name: Create Energy Wokbench Server Docker image
+      - name: Create cimcap Docker image
         run: |
           mv built-artifacts/*.jar built-artifacts/energy-workbench-server.jar
           apk add docker jq xmlstarlet
