@@ -10,7 +10,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.zepben</groupId>
     <artifactId>cimcap</artifactId>
-    <version>0.1.0-SNAPSHOT</version>
+    <version>0.1.0</version>
     <description>Simple gRPC server that writes EWB databases</description>
     <url>https://github.com/zepben/cimcap</url>
     <organization>
