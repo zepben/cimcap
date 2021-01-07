@@ -22,10 +22,13 @@ import com.xenomachina.argparser.ArgParser
 import com.xenomachina.argparser.default
 import com.zepben.auth.JWTAuthenticator
 import com.zepben.auth.grpc.AuthInterceptor
-import com.zepben.cimbend.database.sqlite.DatabaseWriter
 import com.zepben.cimcap.auth.ConfigServer
+import com.zepben.evolve.conn.grpc.ExceptionInterceptor
 import com.zepben.evolve.conn.grpc.GrpcServer
 import com.zepben.evolve.conn.grpc.SslContextConfig
+import com.zepben.evolve.database.sqlite.DatabaseWriter
+import com.zepben.evolve.services.common.meta.MetadataCollection
+import io.grpc.ServerInterceptor
 import io.grpc.netty.shaded.io.netty.handler.ssl.ClientAuth
 import io.vertx.core.Vertx
 import kotlinx.coroutines.runBlocking
@@ -54,7 +57,7 @@ class CIMDBServer(
     private var networkServicer: NetworkProducerServer = NetworkProducerServer(),
     private var diagramServicer: DiagramProducerServer = DiagramProducerServer(),
     private var customerServicer: CustomerProducerServer = CustomerProducerServer()
-) : GrpcServer(port, sslContextConfig, createAuthInterceptor(audience, domain)) {
+) : GrpcServer(port, sslContextConfig, createInterceptors(audience, domain)) {
 
     private val logger: Logger = LoggerFactory.getLogger(javaClass)
     private var networkSent = false
@@ -81,7 +84,7 @@ class CIMDBServer(
         }
         if (isComplete) {
             val writer = DatabaseWriter(databaseFile, getConnection, getStatement, getPreparedStatement)
-            if (writer.save(listOf(networkServicer.networkService, diagramServicer.diagramService, customerServicer.customerService))) {
+            if (writer.save(MetadataCollection(), listOf(networkServicer.networkService, diagramServicer.diagramService, customerServicer.customerService))) {
                 logger.info("Database saved to $databaseFile")
                 stop()
             } else {
@@ -190,3 +193,6 @@ fun main(args: Array<String>) {
     logger.info("Shutdown commenced")
     exitProcess(ret)
 }
+
+private fun createInterceptors(audience: String? = null, domain: String? = null): List<ServerInterceptor> =
+    createAuthInterceptor(audience, domain)?.let { listOf(it, ExceptionInterceptor()) } ?: listOf(ExceptionInterceptor())

@@ -17,9 +17,9 @@
 
 package com.zepben.cimcap
 
-import com.zepben.cimbend.common.extensions.typeNameAndMRID
-import com.zepben.cimbend.network.NetworkService
-import com.zepben.cimbend.network.model.NetworkProtoToCim
+import com.zepben.evolve.services.common.extensions.typeNameAndMRID
+import com.zepben.evolve.services.network.NetworkService
+import com.zepben.evolve.services.network.translator.NetworkProtoToCim
 import com.zepben.protobuf.np.*
 import io.grpc.Status
 import org.slf4j.Logger

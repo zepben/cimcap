@@ -17,9 +17,9 @@
 
 package com.zepben.cimcap
 
-import com.zepben.cimbend.common.extensions.typeNameAndMRID
-import com.zepben.cimbend.customer.CustomerService
-import com.zepben.cimbend.customer.translator.CustomerProtoToCim
+import com.zepben.evolve.services.common.extensions.typeNameAndMRID
+import com.zepben.evolve.services.customer.CustomerService
+import com.zepben.evolve.services.customer.translator.CustomerProtoToCim
 import com.zepben.protobuf.cp.*
 import io.grpc.Status
 import org.slf4j.Logger
