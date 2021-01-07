@@ -17,9 +17,9 @@
 
 package com.zepben.cimcap
 
-import com.zepben.cimbend.common.extensions.typeNameAndMRID
-import com.zepben.cimbend.diagram.DiagramProtoToCim
-import com.zepben.cimbend.diagram.DiagramService
+import com.zepben.evolve.services.common.extensions.typeNameAndMRID
+import com.zepben.evolve.services.diagram.DiagramService
+import com.zepben.evolve.services.diagram.translator.DiagramProtoToCim
 import com.zepben.protobuf.dp.*
 import io.grpc.Status
 import org.slf4j.Logger
